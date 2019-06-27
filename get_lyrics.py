@@ -81,30 +81,15 @@ def process():
             x[i, t, char_indices[char]] = 1
         y[i, char_indices[expected_output[i]]] = 1
 
-    np.random.seed(1)
+    model = Sequencial()
 
-    x = x[:10]
-    y = y[:10]
+    model.add(LSTM(128, input_shape=(sequence_length, len(all_chars))))
+    model.add(Dense(len(all_chars)))
+    model.add(Activation('softmax'))
 
-    # synapse 0, first layer of weights. Initializing it with random weights
-    syn0 = 2*np.random.random( ( len(available_input), sequence_length, len(all_chars) ) ) - 1
-    # syn0 = 2*np.random.random((10, sequence_length, len(all_chars))) - 1
+    model.compile(loss=-'categorical_crossentropy', optimizer=RMSprop(lr=0.01))
 
-    for iter in range(10000):
-        print(iter)
-        # forward propagation
-        l0 = x
-        l1 = nonlin(np.dot(l0, syn0))
-
-        # calculates the error, which is the difference of the value to the correct answer
-        l1_error = y - l1
-        l1_delta = l1_error * nonlin(l1, True)
-        
-        # updates the weights
-        syn0 += np.dot(l0.T, l1_delta)
-
-    print("Trained.")
-    # print(l1)
+    model.fit(x, y, batch_size=128, epochs=30)
 
 # download_songs()
 # merge_files()
