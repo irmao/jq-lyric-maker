@@ -2,6 +2,11 @@ from os import listdir
 from urllib import request
 from bs4 import BeautifulSoup
 import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Flatten
+
 
 SONG_URLS_FILENAME = 'songs.txt'
 LYRICS_DIR = 'lyrics/'
@@ -81,13 +86,14 @@ def process():
             x[i, t, char_indices[char]] = 1
         y[i, char_indices[expected_output[i]]] = 1
 
-    model = Sequencial()
+    print(x.shape)
+    print(y.shape)
 
-    model.add(LSTM(128, input_shape=(sequence_length, len(all_chars))))
-    model.add(Dense(len(all_chars)))
-    model.add(Activation('softmax'))
+    model = Sequential()
 
-    model.compile(loss=-'categorical_crossentropy', optimizer=RMSprop(lr=0.01))
+    model.add(Flatten())
+    model.add(Dense(len(all_chars), activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     model.fit(x, y, batch_size=128, epochs=30)
 
