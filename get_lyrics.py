@@ -5,7 +5,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras.layers import Flatten
+from keras.layers import Embedding
 
 
 SONG_URLS_FILENAME = 'songs.txt'
@@ -77,22 +77,32 @@ def process():
         expected_output.append(text[i + sequence_length])
 
     # create empty matrices for input and output sets
-    x = np.zeros((len(available_input), sequence_length, len(all_chars)), dtype=np.bool)
-    y = np.zeros((len(expected_output), len(all_chars)), dtype=np.bool)
+    # x = np.zeros((len(available_input), sequence_length, len(all_chars)), dtype=np.bool)
+    # y = np.zeros((len(expected_output), len(all_chars)), dtype=np.bool)
+    x = np.zeros(len(available_input), sequence_length, dtype=np.int8)
+    y = np.zeros(sequence_length, dtype=np.int8)
 
     # converts each char to its related index and add them into the matrices
-    for i, inpt in enumerate(available_input):
-        for t, char in enumerate(inpt):
-            x[i, t, char_indices[char]] = 1
-        y[i, char_indices[expected_output[i]]] = 1
-
-    print(x.shape)
-    print(y.shape)
+    #for i, inpt in enumerate(available_input):
+    #    for t, char in enumerate(inpt):
+    #        x[i, t, char_indices[char]] = 1
+    #    y[i, char_indices[expected_output[i]]] = 1
 
     model = Sequential()
 
-    model.add(Flatten())
-    model.add(Dense(len(all_chars), activation='softmax'))
+    # A word embedding is a class of approaches for representing words and documents using a dense vector
+    # representation. Keras offers an Embedding layer that can be used for neural networks on text data.
+    #
+    # input_dim: This is the size of the vocabulary in the text data. For example, if your data is integer
+    #            encoded to values between 0-10, then the size of the vocabulary would be 11 words.
+    # output_dim: This is the size of the vector space in which words will be embedded. It defines the size
+    #            of the output vectors from this layer for each word. For example, it could be 32 or 100 or even
+    #            larger. Test different values for your problem.
+    # input_length: This is the length of input sequences, as you would define for any input layer of a Keras model.
+    #            For example, if all of your input documents are comprised of 1000 words, this would be 1000.
+    model.add(Embedding(len(all_chars), 50, input_length=len(available_input)))
+
+    # model.add(Dense(len(all_chars), activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     model.fit(x, y, batch_size=128, epochs=30)
