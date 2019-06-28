@@ -6,11 +6,12 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Embedding
+from keras.layers import Flatten
 
 
 SONG_URLS_FILENAME = 'songs.txt'
 LYRICS_DIR = 'lyrics/'
-ALL_LYRICS_FILENAME = 'all_lyrics.txt'
+ALL_LYRICS_FILENAME = 'all_lyrics100.txt'
 
 # sigmoid function
 def nonlin(x, deriv=False):
@@ -61,32 +62,42 @@ def process():
     file.close()
 
     # creates a set of all unique chars found in the text
-    all_chars = sorted((list(set(text))))
+    vocab = sorted((list(set(text))))
+    vocab_size = len(vocab)
 
     # creates a dictionary to map each char to a number
-    char_indices = dict((c, i) for i, c in enumerate(all_chars))
+    char_indices = dict((c, i) for i, c in enumerate(vocab))
 
     # creates a dictionary to map back each number to a char
-    indices_char = dict((i,c) for i, c in enumerate(all_chars))
+    indices_char = dict((i,c) for i, c in enumerate(vocab))
 
-    available_input = []
+    sequences = []
     expected_output = []
     sequence_length = 20
     for i in range(0, len(text) - sequence_length):
-        available_input.append(text[i: i + sequence_length])
+        sequences.append(text[i: i + sequence_length])
         expected_output.append(text[i + sequence_length])
 
+    sequences_size = len(sequences)
+    output_size = len(expected_output)
+
     # create empty matrices for input and output sets
-    # x = np.zeros((len(available_input), sequence_length, len(all_chars)), dtype=np.bool)
-    # y = np.zeros((len(expected_output), len(all_chars)), dtype=np.bool)
-    x = np.zeros(len(available_input), sequence_length, dtype=np.int8)
-    y = np.zeros(sequence_length, dtype=np.int8)
+    # x = np.zeros((sequences_size, sequence_length, vocab_size), dtype=np.bool)
+    # y = np.zeros((output_size, vocab_size), dtype=np.bool)
+
+    x = np.zeros((sequences_size, sequence_length), dtype=np.int8)
+    y = np.zeros(sequences_size, dtype=np.int8)
 
     # converts each char to its related index and add them into the matrices
-    #for i, inpt in enumerate(available_input):
+    # for i, inpt in enumerate(sequences):
     #    for t, char in enumerate(inpt):
     #        x[i, t, char_indices[char]] = 1
     #    y[i, char_indices[expected_output[i]]] = 1
+
+    for i, inpt in enumerate(sequences):
+       for j, char in enumerate(inpt):
+           x[i, j] = char_indices[char]
+       y[i] = char_indices[expected_output[i]]
 
     model = Sequential()
 
@@ -100,10 +111,14 @@ def process():
     #            larger. Test different values for your problem.
     # input_length: This is the length of input sequences, as you would define for any input layer of a Keras model.
     #            For example, if all of your input documents are comprised of 1000 words, this would be 1000.
-    model.add(Embedding(len(all_chars), 50, input_length=len(available_input)))
+    model.add(Embedding(vocab_size, 50, input_length=sequence_length))
+
+    # model.add(Flatten())
+    model.add(LSTM(100))
+    model.add(Dense(len(all_chars), activation='softmax'))
 
     # model.add(Dense(len(all_chars), activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     model.fit(x, y, batch_size=128, epochs=30)
 
